@@ -9,3 +9,12 @@ Right now there are some bugs that I haven't be able to work around:
 I have asked questions about these issues in the UE forums. If you have any ideas, please let me know!
 - [Question specific to Learning Agents](https://forums.unrealengine.com/t/learningagentmanager-in-pure-c-setting-maxagents-or-components-cant-find-manager/1310438)
 - [More general question about UObject construction time parameters](https://forums.unrealengine.com/t/providing-construction-time-critical-state-to-a-parent-from-the-child/1310455)
+
+## New Features
+There's a few features I've added beyond the original tutorial:
+- I have made a special vehicle pawn specifically for autonomous control.
+  - This new pawn has no cameras or input components as they are not needed.
+  - It also has a special arrow to visualize the controller input coming from the learning agent.
+- There are autonomous pawns for BOTH the sports car and the off-road car.
+- The Spline Component needed to follow the track is built automatically from the landscape spline actor.
+  - Code for this is inside the LearningManager c++ class.
