@@ -23,10 +23,9 @@ ARLTrainingManager::ARLTrainingManager()
 	PrimaryActorTick.TickInterval = 0.1f;
 
 	// Instantiate all the needed components
-	UE_LOG(LogTemp, Warning, TEXT("Initializing learning manager components"));
-	AutonomousInteractor = CreateDefaultSubobject<UAutonomousVehicleInteractor>("Agent Interactor");
-	AutonomousPolicy = CreateDefaultSubobject<UAutonomousVehiclePolicy>("Agent Policy");
-	AutonomousTrainer = CreateDefaultSubobject<UAutonomousVehicleTrainer>("Agent Trainer");
+	AutonomousInteractor = CreateDefaultSubobject<UAutonomousVehicleInteractor>("Agent Interactor", true);
+	AutonomousPolicy = CreateDefaultSubobject<UAutonomousVehiclePolicy>("Agent Policy", true);
+	AutonomousTrainer = CreateDefaultSubobject<UAutonomousVehicleTrainer>("Agent Trainer", true);
 
 	// Initialize our spline component
 	TrackSpline = CreateDefaultSubobject<USplineComponent>("Track Spline");
@@ -56,7 +55,6 @@ void ARLTrainingManager::BeginPlay()
 	}
 
 	// Initialize the learning assets in order
-	UE_LOG(LogTemp, Warning, TEXT("Running Component setups"));
 	AutonomousInteractor->SetupInteractor();
 	AutonomousPolicy->SetupPolicy(AutonomousInteractor, AutonomousPolicySettings, NeuralNetworkWeights);
 	AutonomousTrainer->SetupTrainer(AutonomousInteractor, AutonomousPolicy, AutonomousCritic, AutonomousTrainerSettings);

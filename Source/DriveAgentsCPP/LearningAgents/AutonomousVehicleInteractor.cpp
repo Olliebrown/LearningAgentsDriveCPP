@@ -10,6 +10,8 @@
 // Vehicle movement
 #include "ChaosWheeledVehicleMovementComponent.h"
 
+UAutonomousVehicleInteractor::UAutonomousVehicleInteractor(FVTableHelper& Helper) : Super(Helper) {}
+
 void UAutonomousVehicleInteractor::SetupObservations_Implementation()
 {
 	// Setup the four observations (mostly with defaults)

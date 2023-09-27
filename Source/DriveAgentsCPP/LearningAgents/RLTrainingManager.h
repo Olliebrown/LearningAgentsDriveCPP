@@ -3,19 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "LearningAgentsManager.h"
+#include "LearningAgentsTrainer.h"
+#include "LearningAgentsPolicy.h"
+#include "LearningAgentsCritic.h"
+
 #include "RLTrainingManager.generated.h"
 
 // Different Learning Agent Manager Components
 class UAutonomousVehicleInteractor;
-class UAutonomouseVehiclePolicy;
-class UAutonomouseVehicleTrainer;
-
-// Various Learning Agent setting structs
-struct FLearningAgentsTrainerTrainingSettings;
-struct FLearningAgentsTrainerGameSettings;
-struct FLearningAgentsTrainerPathSettings;
-struct FLearningAgentsCriticSettings;
+class UAutonomousVehiclePolicy;
+class UAutonomousVehicleTrainer;
 
 // Forward dec for traditional components
 class USplineComponent;

@@ -24,6 +24,8 @@ class DRIVEAGENTSCPP_API UAutonomousVehicleInteractor : public ULearningAgentsIn
 	GENERATED_BODY()
 	
 public:
+	UAutonomousVehicleInteractor(FVTableHelper& Helper);
+
 	FORCEINLINE void SetTrackSpline(USplineComponent* NewTrackSpline) { TrackSpline = NewTrackSpline; }
 
 	// Observation events

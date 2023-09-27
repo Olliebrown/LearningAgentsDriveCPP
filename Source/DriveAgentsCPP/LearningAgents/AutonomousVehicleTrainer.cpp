@@ -12,7 +12,7 @@
 void UAutonomousVehicleTrainer::SetupRewards_Implementation()
 {
 	// Setup the rewards/penalties
-	OffTrackPenalty = UPlanarPositionDifferencePenalty::AddPlanarPositionDifferencePenalty(this, "OffTrackPenalty", 1.0f, 100.0f, 800.0f);
+	OffTrackPenalty = UPlanarPositionDifferencePenalty::AddPlanarPositionDifferencePenalty(this, "OffTrackPenalty", 1.0f, 100.0f, 400.0f);
 	SpeedReward = UScalarVelocityReward::AddScalarVelocityReward(this, "SpeedReward", 0.1f, 200.0f);
 
 	// Setup the helper
@@ -21,7 +21,7 @@ void UAutonomousVehicleTrainer::SetupRewards_Implementation()
 
 void UAutonomousVehicleTrainer::SetupCompletions_Implementation()
 {
-	OffTrackCompletion = UPlanarPositionDifferenceCompletion::AddPlanarPositionDifferenceCompletion(this, "OffTrackCompletion", 1200.0f, ELearningAgentsCompletion::Termination);
+	OffTrackCompletion = UPlanarPositionDifferenceCompletion::AddPlanarPositionDifferenceCompletion(this, "OffTrackCompletion", 600.0f, ELearningAgentsCompletion::Termination);
 }
 
 void UAutonomousVehicleTrainer::SetRewards_Implementation(const TArray<int32>& AgentIds)
