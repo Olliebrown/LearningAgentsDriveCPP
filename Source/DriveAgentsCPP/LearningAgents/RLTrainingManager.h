@@ -29,15 +29,15 @@ class DRIVEAGENTSCPP_API ARLTrainingManager : public ALearningAgentsManager
 	GENERATED_BODY()
 
 	/** Autonomous Vehicle Interactor */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Learning Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Learning Components", meta = (AllowPrivateAccess = "true"))
 		UAutonomousVehicleInteractor* AutonomousInteractor;
 
 	/** Autonomous Vehicle Policy */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Learning Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Learning Components", meta = (AllowPrivateAccess = "true"))
 		UAutonomousVehiclePolicy* AutonomousPolicy;
 
 	/** Autonomous Vehicle Trainer */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Learning Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Transient, Category = "Learning Components", meta = (AllowPrivateAccess = "true"))
 		UAutonomousVehicleTrainer* AutonomousTrainer;
 
 	/** Spline component for the track */
@@ -84,6 +84,14 @@ protected:
 		ULearningAgentsCritic* AutonomousCritic;
 
 	/** Data Asset for Neural Network Weights (be sure to assign to a DataAsset in your project content). */
-	UPROPERTY(EditAnywhere, Category = "Learning Data")
+	UPROPERTY(EditDefaultsOnly, Category = "Manager Config")
 		ULearningAgentsNeuralNetwork* NeuralNetworkWeights;
+
+	/** Should the manager reset the neural network weights before training */
+	UPROPERTY(EditDefaultsOnly, Category = "Manager Config")
+		bool bResetNeuralNetworkWeights;
+
+	/** Should the manager run in inference mode instead of training mode */
+	UPROPERTY(EditDefaultsOnly, Category = "Manager Config")
+		bool bInferenceMode;
 };

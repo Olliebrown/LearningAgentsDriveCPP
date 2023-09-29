@@ -51,24 +51,31 @@ void ARLTrainingManager::BeginPlay()
 	{
 		AutonomousInteractor->SetTrackSpline(TrackSpline);
 		AutonomousPolicy->SetTrackSpline(TrackSpline);
-		AutonomousTrainer->SetTrackSpline(TrackSpline);
+		if (!bInferenceMode)
+		{
+			AutonomousTrainer->SetTrackSpline(TrackSpline);
+		}
 	}
 
 	// Initialize the learning assets in order
 	AutonomousInteractor->SetupInteractor();
 	AutonomousPolicy->SetupPolicy(AutonomousInteractor, AutonomousPolicySettings, NeuralNetworkWeights);
-	AutonomousTrainer->SetupTrainer(AutonomousInteractor, AutonomousPolicy, AutonomousCritic, AutonomousTrainerSettings);
 
-	// Scatter the Agents around the track for the first training session
-	TArray<AActor*> AgentVehicles;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAutonomousVehiclePawn::StaticClass(), AgentVehicles);
-	for (AActor* AgentActor : AgentVehicles)
+	if (!bInferenceMode)
 	{
-		AAutonomousVehiclePawn* AgentVehicle = Cast<AAutonomousVehiclePawn>(AgentActor);
-		if (AgentVehicle != nullptr)
+		AutonomousTrainer->SetupTrainer(AutonomousInteractor, AutonomousPolicy, AutonomousCritic, AutonomousTrainerSettings);
+
+		// Scatter the Agents around the track for the first training session
+		TArray<AActor*> AgentVehicles;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAutonomousVehiclePawn::StaticClass(), AgentVehicles);
+		for (AActor* AgentActor : AgentVehicles)
 		{
-			AgentVehicle->SetEnableInputVisualizer(true);
-			AgentVehicle->ResetToRandomPointOnSpline(TrackSpline);
+			AAutonomousVehiclePawn* AgentVehicle = Cast<AAutonomousVehiclePawn>(AgentActor);
+			if (AgentVehicle != nullptr)
+			{
+				AgentVehicle->SetEnableInputVisualizer(true);
+				AgentVehicle->ResetToRandomPointOnSpline(TrackSpline);
+			}
 		}
 	}
 }
@@ -76,7 +83,14 @@ void ARLTrainingManager::BeginPlay()
 void ARLTrainingManager::Tick(float deltaSeconds)
 {
 	Super::Tick(deltaSeconds);
-	AutonomousTrainer->RunTraining(TrainingSettings, TrainerGameSettings, TrainerPathSettings, CriticSettings, false, true, true);
+	if (bInferenceMode)
+	{
+		AutonomousPolicy->RunInference();
+	}
+	else
+	{
+		AutonomousTrainer->RunTraining(TrainingSettings, TrainerGameSettings, TrainerPathSettings, CriticSettings, bResetNeuralNetworkWeights, true, true);
+	}
 }
 
 bool ARLTrainingManager::BuildTrackSplineFromLandscapeSpline()
