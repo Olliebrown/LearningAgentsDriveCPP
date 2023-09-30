@@ -14,11 +14,20 @@ UAutonomousVehicleInteractor::UAutonomousVehicleInteractor(FVTableHelper& Helper
 
 void UAutonomousVehicleInteractor::SetupObservations_Implementation()
 {
-	// Setup the four observations (mostly with defaults)
+	// Setup the four basic observations (mostly with defaults)
 	TrackPositionObservation = UPlanarPositionObservation::AddPlanarPositionObservation(this, "TrackPositionObservation");
 	TrackDirectionObservation = UPlanarDirectionObservation::AddPlanarDirectionObservation(this, "TrackDirectionObservation");
 	TrackPositionParameterObservation = UAngleObservation::AddAngleObservation(this, "TrackPositionParameterObservation");
 	CarVelocityObservation = UPlanarVelocityObservation::AddPlanarVelocityObservation(this, "CarVelocityObservation");
+
+	// Setup the look ahead observations
+	TrackLookAheadPositionObservations = new UPlanarPositionObservation*[LookAheadObservationCount];
+	TrackLookAheadDirectionObservations = new UPlanarDirectionObservation*[LookAheadObservationCount];
+	for (int i = 0; i < LookAheadObservationCount; i++)
+	{
+		TrackLookAheadPositionObservations[i] = UPlanarPositionObservation::AddPlanarPositionObservation(this, FName(*FString::Printf(TEXT("TrackLookAheadPositionObservation_%d"), i)));
+		TrackLookAheadDirectionObservations[i] = UPlanarDirectionObservation::AddPlanarDirectionObservation(this, FName(*FString::Printf(TEXT("TrackLookAheadDirectionObservation_%d"), i)));
+	}
 
 	// Setup the helper
 	TrackSplineHelper = USplineComponentHelper::AddSplineComponentHelper(this, "TrackSplineHelper");
@@ -62,6 +71,22 @@ void UAutonomousVehicleInteractor::SetObservations_Implementation(const TArray<i
 			FVector splineDirection = TrackSplineHelper->GetDirectionAtDistanceAlongSpline(AgentId, TrackSpline, splineDistance);
 			TrackDirectionObservation->SetPlanarDirectionObservation(AgentId, splineDirection, relativeRotation);
 
+			// Compute look ahead positions and directions
+			float lookAheadSplineDistance = splineDistance + LookAheadDistance;
+			for (int i = 0; i < LookAheadObservationCount; i++)
+			{
+				// Compute look ahead position and set observation
+				FVector lookAheadPosition = TrackSplineHelper->GetPositionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance);
+				TrackLookAheadPositionObservations[i]->SetPlanarPositionObservation(AgentId, lookAheadPosition, relativePosition, relativeRotation);
+
+				// Compute look ahead direction and set observation
+				FVector lookAheadDirection = TrackSplineHelper->GetDirectionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance);
+				TrackLookAheadDirectionObservations[i]->SetPlanarDirectionObservation(AgentId, lookAheadDirection, relativeRotation);
+
+				// Increment look ahead distance
+				lookAheadSplineDistance += LookAheadDistance;
+			}
+
 			// Compute normalized distance along spline (as angle) and set observation
 			float splineParameter = TrackSplineHelper->GetProportionAlongSplineAsAngle(AgentId, TrackSpline, splineDistance);
 			TrackPositionParameterObservation->SetAngleObservation(AgentId, splineParameter);
@@ -88,11 +113,11 @@ void UAutonomousVehicleInteractor::GetActions_Implementation(const TArray<int32>
 			// Apply steering action
 			MovementComponent->SetSteeringInput(SteeringAction->GetFloatAction(AgentId));
 
-			// Are we accellerating or braking?
+			// Are we accelerating or braking?
 			float throttle = ThrottleBrakeAction->GetFloatAction(AgentId);
 			if (throttle >= 0)
 			{
-				// Apply as accelleration
+				// Apply as acceleration
 				MovementComponent->SetBrakeInput(0.0f);
 				MovementComponent->SetThrottleInput(throttle);
 			}

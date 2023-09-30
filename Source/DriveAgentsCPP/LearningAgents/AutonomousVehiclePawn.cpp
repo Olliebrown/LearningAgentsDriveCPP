@@ -114,6 +114,22 @@ void AAutonomousVehiclePawn::Tick(float deltaSeconds)
 {
 	Super::Tick(deltaSeconds);
 
+	// If we have flipped, make sure the reset timer is running
+	if (!ResetTimer.IsValid() && GetActorUpVector().Z < 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Starting Flip Timer %d"), AgentId);
+		GetWorldTimerManager().SetTimer(
+			ResetTimer, this, &AAutonomousVehiclePawn::ResetVehicle, 5.0, true, -1.0f
+		);
+	}
+	// If we are right-side up, make sure the timer is cleared
+	else if(ResetTimer.IsValid() && GetActorUpVector().Z >= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Clearing Flip Timer %d"), AgentId);
+		GetWorldTimerManager().ClearTimer(ResetTimer);
+		ResetTimer = FTimerHandle();
+	}
+
 	// Update the input visualizer if it is enabled
 	if (bEnableInputVisualizer)
 	{
@@ -144,4 +160,23 @@ void AAutonomousVehiclePawn::UpdateInputVisualization_Implementation()
 	FRotator SteeringRotation = InputVisualizer->GetRelativeRotation();
 	SteeringRotation.Yaw = SteeringAngle;
 	InputVisualizer->SetRelativeRotation(SteeringRotation);
+}
+
+void AAutonomousVehiclePawn::ResetVehicle()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Resetting Vehicle %d"), AgentId);
+
+	// reset to a location slightly above our current one
+	FVector ResetLocation = GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
+
+	// reset to our yaw. Ignore pitch and roll
+	FRotator ResetRotation = GetActorRotation();
+	ResetRotation.Pitch = 0.0f;
+	ResetRotation.Roll = 0.0f;
+
+	// teleport the actor to the reset spot and reset physics
+	SetActorTransform(FTransform(ResetRotation, ResetLocation, FVector::OneVector), false, nullptr, ETeleportType::TeleportPhysics);
+
+	GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
 }

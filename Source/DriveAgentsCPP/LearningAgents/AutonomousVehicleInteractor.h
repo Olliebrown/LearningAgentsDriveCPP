@@ -37,9 +37,19 @@ public:
 	virtual void GetActions_Implementation(const TArray<int32>& AgentIds) override;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Settings")
+		int LookAheadObservationCount = 10;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Settings")
+		float LookAheadDistance = 500.0f;
+
 	// Observations
 	UPlanarPositionObservation* TrackPositionObservation;
 	UPlanarDirectionObservation* TrackDirectionObservation;
+
+	UPlanarPositionObservation** TrackLookAheadPositionObservations;
+	UPlanarDirectionObservation** TrackLookAheadDirectionObservations;
+
 	UAngleObservation* TrackPositionParameterObservation;
 	UPlanarVelocityObservation* CarVelocityObservation;
 

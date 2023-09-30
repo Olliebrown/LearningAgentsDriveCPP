@@ -64,16 +64,19 @@ void ARLTrainingManager::BeginPlay()
 	if (!bInferenceMode)
 	{
 		AutonomousTrainer->SetupTrainer(AutonomousInteractor, AutonomousPolicy, AutonomousCritic, AutonomousTrainerSettings);
+	}
 
-		// Scatter the Agents around the track for the first training session
-		TArray<AActor*> AgentVehicles;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAutonomousVehiclePawn::StaticClass(), AgentVehicles);
-		for (AActor* AgentActor : AgentVehicles)
+	// Initialize the Agents
+	TArray<AActor*> AgentVehicles;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAutonomousVehiclePawn::StaticClass(), AgentVehicles);
+	for (AActor* AgentActor : AgentVehicles)
+	{
+		AAutonomousVehiclePawn* AgentVehicle = Cast<AAutonomousVehiclePawn>(AgentActor);
+		if (AgentVehicle != nullptr)
 		{
-			AAutonomousVehiclePawn* AgentVehicle = Cast<AAutonomousVehiclePawn>(AgentActor);
-			if (AgentVehicle != nullptr)
+			AgentVehicle->SetEnableInputVisualizer(!bInferenceMode);
+			if (!bInferenceMode)
 			{
-				AgentVehicle->SetEnableInputVisualizer(true);
 				AgentVehicle->ResetToRandomPointOnSpline(TrackSpline);
 			}
 		}

@@ -38,6 +38,9 @@ public:
 	/** Enable or disable the input visualizer (will also hide or show the visualizer components when called) */
 	void SetEnableInputVisualizer(bool bNewEnableInputVisualizer);
 
+	/** Right the vehicle after it has flipped. */
+	void ResetVehicle();
+
 	/** Returns the cast Chaos Vehicle Movement subobject */
 	FORCEINLINE const TObjectPtr<UChaosWheeledVehicleMovementComponent>& GetChaosVehicleMovement() const { return ChaosVehicleMovement; }
 
@@ -67,4 +70,7 @@ protected:
 
 	/** Identifier after this agent is registered with the learning manager */
 	int32 AgentId;
+
+	/** Handle to a timer to auto-reset the vehicle when it flips */
+	FTimerHandle ResetTimer;
 };
