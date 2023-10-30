@@ -37,9 +37,9 @@ AAutonomousVehiclePawn::AAutonomousVehiclePawn()
 	// Initialize input visualizer transform properties
 	InputArrow->SetRelativeLocation(FVector(0.0f, 0.0f, 160.0f));
 	InputArrow->SetHiddenInGame(false);
-	InputArrow->ArrowColor = ForwardColor;
-	InputArrow->ArrowSize = 10.0f;
-	InputArrow->ArrowLength = 80.0f;
+	InputArrow->SetArrowFColor(ForwardColor);
+	InputArrow->SetArrowSize(10.0f);
+	InputArrow->SetArrowLength(80.0f);
 
 	// Use setter to get proper side-effects
 	SetEnableInputVisualizer(false);
@@ -149,8 +149,8 @@ void AAutonomousVehiclePawn::UpdateInputVisualization_Implementation()
 	//	ScaledThrottle
 	//);
 
-	// Set arrow length and color (NOTE: Color does not seem to be updating when rendered?)
-	InputArrow->ArrowColor = (ScaledThrottle >= 0.0f ? ForwardColor : BackwardColor);
+	// Set arrow length and color
+	InputArrow->SetArrowFColor(ScaledThrottle >= 0.0f ? ForwardColor : BackwardColor);
 	InputArrow->SetRelativeScale3D(FMath::Sign(ScaledThrottle) * FVector(FMath::Abs(ScaledThrottle), 1.0, 1.0));
 
 	// Get steering input as angle in degrees
