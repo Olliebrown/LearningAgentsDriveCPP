@@ -59,11 +59,12 @@ void AAutonomousVehiclePawn::ResetToRandomPointOnSpline(USplineComponent* TrackS
 	FVector randomPosition = TrackSpline->GetLocationAtDistanceAlongSpline(randomLength, ESplineCoordinateSpace::World);
 
 	// Shift from center of track and raise up a bit off the ground
-	randomPosition += FVector(FMath::FRandRange(-400.0f, 400.0f), FMath::FRandRange(-400.0f, 400.0f), 25.0f);
+	randomPosition += FVector(FMath::FRandRange(-400.0f, 400.0f), FMath::FRandRange(-400.0f, 400.0f), 100.0f);
 
 	// Randomize heading within +-45 degrees
-	float trackYaw = TrackSpline->GetRotationAtDistanceAlongSpline(randomLength, ESplineCoordinateSpace::World).Yaw;
-	FRotator randomHeading = FRotator(0.0f, trackYaw + FMath::FRandRange(-45.0f, 45.0f), 0.0f);
+	FRotator currentRotation = TrackSpline->GetRotationAtDistanceAlongSpline(randomLength, ESplineCoordinateSpace::World);
+
+	FRotator randomHeading = FRotator(currentRotation.Pitch, currentRotation.Yaw + FMath::FRandRange(-45.0f, 45.0f), currentRotation.Roll);
 
 	// DEBUG: Print the position and heading as it randomizes
 	// UE_LOG(LogTemp, Warning,
