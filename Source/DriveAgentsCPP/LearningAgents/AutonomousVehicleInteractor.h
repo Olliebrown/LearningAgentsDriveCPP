@@ -47,8 +47,8 @@ protected:
 	UPlanarPositionObservation* TrackPositionObservation;
 	UPlanarDirectionObservation* TrackDirectionObservation;
 
-	UPlanarPositionObservation** TrackLookAheadPositionObservations;
-	UPlanarDirectionObservation** TrackLookAheadDirectionObservations;
+	UPlanarPositionArrayObservation* TrackLookAheadPositionArrayObservations;
+	UPlanarDirectionArrayObservation* TrackLookAheadDirectionArrayObservations;
 
 	UAngleObservation* TrackPositionParameterObservation;
 	UPlanarVelocityObservation* CarVelocityObservation;
