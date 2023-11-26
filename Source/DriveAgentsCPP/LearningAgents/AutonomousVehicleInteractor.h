@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "LearningAgentsInteractor.h"
+#include "LearningAgentsObservations.h"
 #include "AutonomousVehicleInteractor.generated.h"
 
 // Learning agents and components forward declarations
