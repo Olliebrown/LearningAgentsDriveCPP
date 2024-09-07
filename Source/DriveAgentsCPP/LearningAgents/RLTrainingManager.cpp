@@ -117,5 +117,8 @@ bool ARLTrainingManager::BuildTrackSplineFromLandscapeSpline()
 	// Copy to our spline and return success
 	LandscapeSpline->CopyToSplineComponent(TrackSpline);
 	TrackSpline->SetClosedLoop(true);
+	for (int i = 0; i < TrackSpline->GetNumberOfSplinePoints(); i++)
+		TrackSpline->SetSplinePointType(i, ESplinePointType::Type::Curve, false);
+	TrackSpline->UpdateSpline();
 	return true;
 }

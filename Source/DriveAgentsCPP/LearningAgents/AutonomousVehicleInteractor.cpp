@@ -28,8 +28,8 @@ void UAutonomousVehicleInteractor::SetupObservations_Implementation()
 	NearbyPositionObservations = UPositionArrayObservation::AddPositionArrayObservation(this, "NearbyPositionObservations", NearbyObservationCount);
 
 	// Setup the look ahead observations
-	TrackLookAheadPositionObservations = UPositionArrayObservation::AddPositionArrayObservation(this, "TrackLookAheadPositionObservations", LookAheadObservationCount);
-	TrackLookAheadDirectionObservations = UDirectionArrayObservation::AddDirectionArrayObservation(this, "TrackLookAheadDirectionObservations", LookAheadObservationCount);
+	TrackLookAheadPositionArrayObservations = UPlanarPositionArrayObservation::AddPlanarPositionArrayObservation(this, "TrackLookAheadPositionArrayObservations", LookAheadObservationCount);
+	TrackLookAheadDirectionArrayObservations = UPlanarDirectionArrayObservation::AddPlanarDirectionArrayObservation(this, "TrackLookAheadDirectionArrayObservations", LookAheadObservationCount);
 
 	// Setup the helper
 	TrackSplineHelper = USplineComponentHelper::AddSplineComponentHelper(this, "TrackSplineHelper");
@@ -75,17 +75,25 @@ void UAutonomousVehicleInteractor::SetObservations_Implementation(const TArray<i
 
 			// Compute look ahead positions and directions
 			float lookAheadSplineDistance = splineDistance + LookAheadDistance;
-			TArray<FVector> lookAheadPos;
-			TArray<FVector> lookAheadDir;
+			TArray<FVector> lookAheadPositionArray;
+			TArray<FVector> lookAheadDirectionArray;
+			lookAheadPositionArray.Reserve(LookAheadObservationCount);
+			lookAheadDirectionArray.Reserve(LookAheadObservationCount);
 			for (int i = 0; i < LookAheadObservationCount; i++)
 			{
-				// Compute look ahead position/direction and gather in arrays
-				lookAheadPos.Add(TrackSplineHelper->GetPositionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance));
-				lookAheadDir.Add(TrackSplineHelper->GetDirectionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance));
+				// Compute look ahead position and set observation
+				FVector lookAheadPosition = TrackSplineHelper->GetPositionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance);
+				lookAheadPositionArray.Push(lookAheadPosition);
+
+				// Compute look ahead direction and set observation
+				FVector lookAheadDirection = TrackSplineHelper->GetDirectionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance);
+				lookAheadDirectionArray.Push(lookAheadDirection);
 
 				// Increment look ahead distance
 				lookAheadSplineDistance += LookAheadDistance;
 			}
+			TrackLookAheadPositionArrayObservations->SetPlanarPositionArrayObservation(AgentId, lookAheadPositionArray, relativePosition, relativeRotation);
+			TrackLookAheadDirectionArrayObservations->SetPlanarDirectionArrayObservation(AgentId, lookAheadDirectionArray, relativeRotation);
 
 			// Add the observation arrays
 			TrackLookAheadPositionObservations->SetPositionArrayObservation(AgentId, lookAheadPos, relativePosition, relativeRotation);

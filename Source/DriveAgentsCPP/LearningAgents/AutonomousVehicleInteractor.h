@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "LearningAgentsInteractor.h"
+#include "LearningAgentsObservations.h"
 #include "AutonomousVehicleInteractor.generated.h"
 
 // Learning agents and components forward declarations
@@ -57,10 +58,8 @@ protected:
 	UPlanarPositionObservation* TrackPositionObservation;
 	UPlanarDirectionObservation* TrackDirectionObservation;
 
-	UPositionArrayObservation* TrackLookAheadPositionObservations;
-	UDirectionArrayObservation* TrackLookAheadDirectionObservations;
-
-	UPositionArrayObservation* NearbyPositionObservations;
+	UPlanarPositionArrayObservation* TrackLookAheadPositionArrayObservations;
+	UPlanarDirectionArrayObservation* TrackLookAheadDirectionArrayObservations;
 
 	UAngleObservation* TrackPositionParameterObservation;
 	UPlanarVelocityObservation* CarVelocityObservation;
