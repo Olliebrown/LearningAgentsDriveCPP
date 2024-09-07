@@ -3,12 +3,16 @@
 #include "AutonomousVehiclePawn.h"
 
 // Learning agents API
+#include "LearningAgentsManager.h"
 #include "LearningAgentsObservations.h"
 #include "LearningAgentsHelpers.h"
 #include "LearningAgentsActions.h"
 
 // Vehicle movement
 #include "ChaosWheeledVehicleMovementComponent.h"
+
+// Misc
+#include "Kismet/KismetStringLibrary.h"
 
 UAutonomousVehicleInteractor::UAutonomousVehicleInteractor(FVTableHelper& Helper) : Super(Helper) {}
 
@@ -20,14 +24,12 @@ void UAutonomousVehicleInteractor::SetupObservations_Implementation()
 	TrackPositionParameterObservation = UAngleObservation::AddAngleObservation(this, "TrackPositionParameterObservation");
 	CarVelocityObservation = UPlanarVelocityObservation::AddPlanarVelocityObservation(this, "CarVelocityObservation");
 
+	// Setup the nearby vehicle observations
+	NearbyPositionObservations = UPositionArrayObservation::AddPositionArrayObservation(this, "NearbyPositionObservations", NearbyObservationCount);
+
 	// Setup the look ahead observations
-	TrackLookAheadPositionObservations = new UPlanarPositionObservation*[LookAheadObservationCount];
-	TrackLookAheadDirectionObservations = new UPlanarDirectionObservation*[LookAheadObservationCount];
-	for (int i = 0; i < LookAheadObservationCount; i++)
-	{
-		TrackLookAheadPositionObservations[i] = UPlanarPositionObservation::AddPlanarPositionObservation(this, FName(*FString::Printf(TEXT("TrackLookAheadPositionObservation_%d"), i)));
-		TrackLookAheadDirectionObservations[i] = UPlanarDirectionObservation::AddPlanarDirectionObservation(this, FName(*FString::Printf(TEXT("TrackLookAheadDirectionObservation_%d"), i)));
-	}
+	TrackLookAheadPositionObservations = UPositionArrayObservation::AddPositionArrayObservation(this, "TrackLookAheadPositionObservations", LookAheadObservationCount);
+	TrackLookAheadDirectionObservations = UDirectionArrayObservation::AddDirectionArrayObservation(this, "TrackLookAheadDirectionObservations", LookAheadObservationCount);
 
 	// Setup the helper
 	TrackSplineHelper = USplineComponentHelper::AddSplineComponentHelper(this, "TrackSplineHelper");
@@ -73,19 +75,21 @@ void UAutonomousVehicleInteractor::SetObservations_Implementation(const TArray<i
 
 			// Compute look ahead positions and directions
 			float lookAheadSplineDistance = splineDistance + LookAheadDistance;
+			TArray<FVector> lookAheadPos;
+			TArray<FVector> lookAheadDir;
 			for (int i = 0; i < LookAheadObservationCount; i++)
 			{
-				// Compute look ahead position and set observation
-				FVector lookAheadPosition = TrackSplineHelper->GetPositionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance);
-				TrackLookAheadPositionObservations[i]->SetPlanarPositionObservation(AgentId, lookAheadPosition, relativePosition, relativeRotation);
-
-				// Compute look ahead direction and set observation
-				FVector lookAheadDirection = TrackSplineHelper->GetDirectionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance);
-				TrackLookAheadDirectionObservations[i]->SetPlanarDirectionObservation(AgentId, lookAheadDirection, relativeRotation);
+				// Compute look ahead position/direction and gather in arrays
+				lookAheadPos.Add(TrackSplineHelper->GetPositionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance));
+				lookAheadDir.Add(TrackSplineHelper->GetDirectionAtDistanceAlongSpline(AgentId, TrackSpline, lookAheadSplineDistance));
 
 				// Increment look ahead distance
 				lookAheadSplineDistance += LookAheadDistance;
 			}
+
+			// Add the observation arrays
+			TrackLookAheadPositionObservations->SetPositionArrayObservation(AgentId, lookAheadPos, relativePosition, relativeRotation);
+			TrackLookAheadDirectionObservations->SetDirectionArrayObservation(AgentId, lookAheadDir, relativeRotation);
 
 			// Compute normalized distance along spline (as angle) and set observation
 			float splineParameter = TrackSplineHelper->GetProportionAlongSplineAsAngle(AgentId, TrackSpline, splineDistance);
@@ -94,9 +98,56 @@ void UAutonomousVehicleInteractor::SetObservations_Implementation(const TArray<i
 			// Read actor velocity and set observation
 			FVector velocity = Agent->GetVelocity();
 			CarVelocityObservation->SetPlanarVelocityObservation(AgentId, velocity, relativeRotation);
+
+			// Loop over other actors and find closest
+			TArray<FVector> nearbyPos = FindClosestAgents(AgentIds, AgentId, relativePosition);
+			NearbyPositionObservations->SetPositionArrayObservation(AgentId, nearbyPos, relativePosition, relativeRotation);
 		}
 	}
 }
+
+TArray<FVector> UAutonomousVehicleInteractor::FindClosestAgents(const TArray<int32>& AgentIds, int32 CurId, FVector relativePosition) const
+{
+	// Initialize arrays with max allowed distance
+	TArray<FVector> minPos;
+	TArray<float> minDist;
+
+	minPos.Init(FVector(-NearbyMaxDistance, 0.0f, 0.0f), NearbyObservationCount);
+	minDist.Init(NearbyMaxDistance * NearbyMaxDistance, NearbyObservationCount);
+	
+	// Loop over all agent IDs
+	for (int32 AgentId : AgentIds)
+	{
+		// Skip the current agent
+		if (AgentId == CurId) {
+			continue;
+		}
+
+		// Retrieve Agent as Actor
+		const AActor* Agent = Cast<AActor>(GetAgent(AgentId));
+		if (Agent != nullptr)
+		{
+			float sqDistance = FVector::DistSquared(relativePosition, Agent->GetActorLocation());
+			int32 minIndex = 0;
+			while (minIndex < NearbyObservationCount && minDist[minIndex] > sqDistance) {
+				minIndex++;
+			}
+
+			if (minIndex < NearbyObservationCount) {
+				minDist.Insert(sqDistance, minIndex);
+				minPos.Insert(Agent->GetActorLocation(), minIndex);
+			}
+		}
+	}
+
+	while (minPos.Num() > NearbyObservationCount) {
+		minPos.Pop();
+	}
+
+	// Return back the list
+	return minPos;
+}
+
 
 void UAutonomousVehicleInteractor::GetActions_Implementation(const TArray<int32>& AgentIds)
 {

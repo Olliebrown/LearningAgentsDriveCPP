@@ -74,7 +74,7 @@ void ARLTrainingManager::BeginPlay()
 		AAutonomousVehiclePawn* AgentVehicle = Cast<AAutonomousVehiclePawn>(AgentActor);
 		if (AgentVehicle != nullptr)
 		{
-			AgentVehicle->SetEnableInputVisualizer(!bInferenceMode);
+			AgentVehicle->SetEnableInputVisualizer(false); // !bInferenceMode);
 			if (!bInferenceMode)
 			{
 				AgentVehicle->ResetToRandomPointOnSpline(TrackSpline);

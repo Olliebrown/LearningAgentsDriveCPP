@@ -8,17 +8,51 @@
 #include "../DriveAgentsCPPWheelFront.h"
 #include "../DriveAgentsCPPWheelRear.h"
 
+#include "LandscapeSplineActor.h"
+
 #include "Components/SplineComponent.h"
 #include "Components/ArrowComponent.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
 
 AAutonomousVehiclePawn::AAutonomousVehiclePawn()
 {
+	// construct the front camera boom
+	FrontSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Front Spring Arm"));
+	FrontSpringArm->SetupAttachment(GetMesh());
+	FrontSpringArm->TargetArmLength = 0.0f;
+	FrontSpringArm->bDoCollisionTest = false;
+	FrontSpringArm->bEnableCameraRotationLag = true;
+	FrontSpringArm->CameraRotationLagSpeed = 15.0f;
+	FrontSpringArm->SetRelativeLocation(FVector(30.0f, 0.0f, 110.0f));
+
+	FrontCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Front Camera"));
+	FrontCamera->SetupAttachment(FrontSpringArm);
+	FrontCamera->bAutoActivate = true;
+	FrontCamera->SetConstraintAspectRatio(true);
+	FrontCamera->SetAspectRatio(16.0f / 9.0f);
+	FrontCamera->SetFieldOfView(45.0f);
+
+	//// construct the back camera boom
+	//BackSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Back Spring Arm"));
+	//BackSpringArm->SetupAttachment(GetMesh());
+	//BackSpringArm->TargetArmLength = 650.0f;
+	//BackSpringArm->SocketOffset.Z = 150.0f;
+	//BackSpringArm->bDoCollisionTest = false;
+	//BackSpringArm->bInheritPitch = false;
+	//BackSpringArm->bInheritRoll = false;
+	//BackSpringArm->bEnableCameraRotationLag = true;
+	//BackSpringArm->CameraRotationLagSpeed = 2.0f;
+	//BackSpringArm->CameraLagMaxDistance = 50.0f;
+
+	//BackCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Back Camera"));
+	//BackCamera->SetupAttachment(BackSpringArm);
+
 	// Configure the car mesh physics
 	GetMesh()->SetSimulatePhysics(true);
 	GetMesh()->SetCollisionProfileName(FName("Vehicle"));
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Vehicle, ECollisionResponse::ECR_Ignore); // Don't collide with other cars
 
 	// Get the Chaos Wheeled movement component
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
@@ -54,16 +88,34 @@ void AAutonomousVehiclePawn::ResetToRandomPointOnSpline(USplineComponent* TrackS
 		return;
 	}
 
-	// Pick random position along the spline (uniformly distant from start)
-	float randomLength = TrackSpline->GetSplineLength() * FMath::FRand();
-	FVector randomPosition = TrackSpline->GetLocationAtDistanceAlongSpline(randomLength, ESplineCoordinateSpace::World);
+	// Prepare to search for valid spot along racetrack
+	float randomLength = 0;
+	FVector randomPosition = FVector();
+	bool foundTrack = false;
 
-	// Shift from center of track and raise up a bit off the ground
-	randomPosition += FVector(FMath::FRandRange(-400.0f, 400.0f), FMath::FRandRange(-400.0f, 400.0f), 25.0f);
+	// Is there a racetrack beneath this point?
+	FHitResult Hit;
+	while (!foundTrack)
+	{
+		// Pick random position along the spline (uniformly distant from start)
+		randomLength = TrackSpline->GetSplineLength() * FMath::FRand();
+		randomPosition = TrackSpline->GetLocationAtDistanceAlongSpline(randomLength, ESplineCoordinateSpace::World);
+
+		// Shift from center of track and raise up a bit off the ground
+		randomPosition += FVector(FMath::FRandRange(-400.0f, 400.0f), FMath::FRandRange(-TrackWidth, TrackWidth), 200.0f);
+
+		if (GetWorld()->LineTraceSingleByChannel(Hit, randomPosition + FVector(0, 0, 1000), randomPosition - FVector(0, 0, 1000),
+			ECC_Visibility, FCollisionQueryParams("DebugTraceTag", true, this)))
+		{
+			if (Cast<ALandscapeSplineActor>(Hit.GetActor()) != nullptr) {
+				foundTrack = true;
+			}
+		}
+	}
 
 	// Randomize heading within +-45 degrees
 	float trackYaw = TrackSpline->GetRotationAtDistanceAlongSpline(randomLength, ESplineCoordinateSpace::World).Yaw;
-	FRotator randomHeading = FRotator(0.0f, trackYaw + FMath::FRandRange(-45.0f, 45.0f), 0.0f);
+	FRotator randomHeading = FRotator(0.0f, trackYaw + FMath::FRandRange(-60.0f, 60.0f), 0.0f);
 
 	// DEBUG: Print the position and heading as it randomizes
 	// UE_LOG(LogTemp, Warning,
@@ -94,6 +146,16 @@ void AAutonomousVehiclePawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// If disabled, self-destruct
+	if (DisableOnPlay) {
+		this->Destroy();
+		return;
+	}
+
+	// Setup overlap tracking
+	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &AAutonomousVehiclePawn::BeginOverlap);
+	GetMesh()->OnComponentEndOverlap.AddDynamic(this, &AAutonomousVehiclePawn::EndOverlap);
+
 	// Attempt to retrieve a learning manager from the scene
 	ALearningAgentsManager* learningManager = Cast<ALearningAgentsManager>(
 		UGameplayStatics::GetActorOfClass(GetWorld(), ALearningAgentsManager::StaticClass())
@@ -117,7 +179,6 @@ void AAutonomousVehiclePawn::Tick(float deltaSeconds)
 	// If we have flipped, make sure the reset timer is running
 	if (!ResetTimer.IsValid() && GetActorUpVector().Z < 0.0f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Starting Flip Timer %d"), AgentId);
 		GetWorldTimerManager().SetTimer(
 			ResetTimer, this, &AAutonomousVehiclePawn::ResetVehicle, 5.0, true, -1.0f
 		);
@@ -125,7 +186,6 @@ void AAutonomousVehiclePawn::Tick(float deltaSeconds)
 	// If we are right-side up, make sure the timer is cleared
 	else if(ResetTimer.IsValid() && GetActorUpVector().Z >= 0.0f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Clearing Flip Timer %d"), AgentId);
 		GetWorldTimerManager().ClearTimer(ResetTimer);
 		ResetTimer = FTimerHandle();
 	}
@@ -136,6 +196,26 @@ void AAutonomousVehiclePawn::Tick(float deltaSeconds)
 		UpdateInputVisualization();
 	}
 }
+
+void AAutonomousVehiclePawn::BeginOverlap(UPrimitiveComponent* Component, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	AAutonomousVehiclePawn* OtherAgent = Cast<AAutonomousVehiclePawn>(OtherActor);
+	if (OtherAgent != nullptr && !OverlappingAgents.Contains(OtherAgent->GetAgentId()))
+	{
+		OverlappingAgents.Add(OtherAgent->GetAgentId());
+	}
+}
+
+void AAutonomousVehiclePawn::EndOverlap(UPrimitiveComponent* Component, AActor* OtherActor, UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex)
+{
+	AAutonomousVehiclePawn* OtherAgent = Cast<AAutonomousVehiclePawn>(OtherActor);
+	if (OtherAgent != nullptr && OverlappingAgents.Contains(OtherAgent->GetAgentId()))
+	{
+		OverlappingAgents.Remove(OtherAgent->GetAgentId());
+	}
+}
+
+
 
 void AAutonomousVehiclePawn::UpdateInputVisualization_Implementation()
 {
@@ -164,10 +244,8 @@ void AAutonomousVehiclePawn::UpdateInputVisualization_Implementation()
 
 void AAutonomousVehiclePawn::ResetVehicle()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Resetting Vehicle %d"), AgentId);
-
 	// reset to a location slightly above our current one
-	FVector ResetLocation = GetActorLocation() + FVector(0.0f, 0.0f, 50.0f);
+	FVector ResetLocation = GetActorLocation() + FVector(0.0f, 0.0f, 200.0f);
 
 	// reset to our yaw. Ignore pitch and roll
 	FRotator ResetRotation = GetActorRotation();

@@ -25,10 +25,12 @@ protected:
 public:
 
 	/** Called to update the speed display */
-	void UpdateSpeed(float NewSpeed);
+	UFUNCTION(BlueprintCallable, Category = Vehicle)
+		void UpdateSpeed(float NewSpeed);
 
 	/** Called to update the gear display */
-	void UpdateGear(int32 NewGear);
+	UFUNCTION(BlueprintCallable, Category = Vehicle)
+		void UpdateGear(int32 NewGear);
 
 protected:
 

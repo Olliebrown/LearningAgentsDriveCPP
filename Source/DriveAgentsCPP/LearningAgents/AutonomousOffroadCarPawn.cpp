@@ -5,9 +5,13 @@
 #include "../DriveAgentsCPPOffroadWheelFront.h"
 #include "../DriveAgentsCPPOffroadWheelRear.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
 AAutonomousOffroadCarPawn::AAutonomousOffroadCarPawn()
 {
+	// Adjust front camera location
+	FrontSpringArm->SetRelativeLocation(FVector(40.0f, 0.0f, 130.0f));
+
 	// construct the mesh components
 	Chassis = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Chassis"));
 	Chassis->SetupAttachment(GetMesh());

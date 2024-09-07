@@ -9,6 +9,8 @@
 // Learning agents and components forward declarations
 class UPlanarPositionObservation;
 class UPlanarDirectionObservation;
+class UPositionArrayObservation;
+class UDirectionArrayObservation;
 class UAngleObservation;
 class UPlanarVelocityObservation;
 class UFloatAction;
@@ -37,18 +39,28 @@ public:
 	virtual void GetActions_Implementation(const TArray<int32>& AgentIds) override;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, Category = "Settings")
-		int LookAheadObservationCount = 10;
+	TArray<FVector> FindClosestAgents(const TArray<int32>& AgentIds, int32 CurId, FVector relativePosition) const;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Settings")
-		float LookAheadDistance = 500.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		int LookAheadObservationCount = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		float LookAheadDistance = 1000.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		int NearbyObservationCount = 5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Settings")
+		float NearbyMaxDistance = 999999.0f;
 
 	// Observations
 	UPlanarPositionObservation* TrackPositionObservation;
 	UPlanarDirectionObservation* TrackDirectionObservation;
 
-	UPlanarPositionObservation** TrackLookAheadPositionObservations;
-	UPlanarDirectionObservation** TrackLookAheadDirectionObservations;
+	UPositionArrayObservation* TrackLookAheadPositionObservations;
+	UDirectionArrayObservation* TrackLookAheadDirectionObservations;
+
+	UPositionArrayObservation* NearbyPositionObservations;
 
 	UAngleObservation* TrackPositionParameterObservation;
 	UPlanarVelocityObservation* CarVelocityObservation;
