@@ -1,4 +1,4 @@
-This is an attempt to implement the Learning Agents basic tutorial on the [Unreal Engine site](https://dev.epicgames.com/community/learning/courses/M3D/unreal-engine-learning-agents-getting-started/8OWY/unreal-engine-learning-agents-introduction) but in C++ instead of Blueprint.
+This is an attempt to implement the Learning Agents basic tutorial on the [Unreal Engine site](https://dev.epicgames.com/community/learning/courses/kRm/unreal-engine-learning-agents-5-4/4JPj/unreal-engine-learning-agents-intro-5-4) but in C++ instead of Blueprint.
 
 **UPDATE**: This has been re-written for UE 5.4.4 where the learning agents plugin has significant changes. The base tutorial was rewritten so that has been followed and then much of it moved to C++ as with the previous version.
 
